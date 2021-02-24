@@ -595,7 +595,7 @@ namespace annotator1
                         {
 
                             Rect = new Rectangle(startp.X, startp.Y, w, h),
-                            Tag = tags[0]
+                            Tag = tags.Count > 0 ? tags[0] : null
                         });
                     }
                 }
