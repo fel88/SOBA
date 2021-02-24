@@ -79,7 +79,19 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RECT.cs" />
+    <Compile Include="TagEditDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TagEditDialog.Designer.cs">
+      <DependentUpon>TagEditDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="User32.cs" />
+    <Compile Include="WiderExportDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="WiderExportDialog.Designer.cs">
+      <DependentUpon>WiderExportDialog.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Capturer.resx">
       <DependentUpon>Capturer.cs</DependentUpon>
     </EmbeddedResource>
@@ -96,6 +108,12 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="TagEditDialog.resx">
+      <DependentUpon>TagEditDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="WiderExportDialog.resx">
+      <DependentUpon>WiderExportDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

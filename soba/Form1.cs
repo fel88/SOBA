@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace annotator1
@@ -21,25 +17,15 @@ namespace annotator1
             workBmp = new Bitmap(2000, 1500);
             gr = Graphics.FromImage(workBmp);
             ResizeEnd += Form1_ResizeEnd;
-            tags.Add(new annotator1.Tag() { Name = "tag1" });            
-            setTagToolStripMenuItem.DropDownItems.Clear();
-            foreach (var item in tags)
-            {
-                var c = new ToolStripMenuItem(item.Name) { Tag = item };
-                setTagToolStripMenuItem.DropDownItems.Add(c);
-                c.Click += (s, e) =>
-                {
-                    selected.Tag = ((s as ToolStripMenuItem).Tag as Tag);
-                    updateTagsList();
-                };
-            }
+            tags.Add(new annotator1.Tag() { Name = "tag1" });
+
 
 
             pictureBox1.MouseWheel += PictureBox1_MouseWheel;
-            updateTags();
+            updateTagsList();
         }
 
-        void updateTags()
+        void updateTagsList()
         {
             listView3.Items.Clear();
             foreach (var item in tags)
@@ -126,7 +112,7 @@ namespace annotator1
         void redraw()
         {
             gr.Clear(Color.White);
-          
+
             UpdateDrag();
             //gr.DrawImage(crnt, new Rectangle(0, 0, pictureBox1.Width, pictureBox1.Height), new Rectangle(0, 0, crnt.Width, crnt.Height), GraphicsUnit.Pixel);
             if (crnt != null)
@@ -147,11 +133,15 @@ namespace annotator1
                     else
 
                         gr.DrawRectangle(pen, t1.X, t1.Y, item.Rect.Width * zoom, item.Rect.Height * zoom);
-                    
+
                     var fnt = new Font("Consolas", 14);
-                    var ms = gr.MeasureString(item.Tag.Name, fnt);
+                    var tag = "(null)";
+                    if (item.Tag != null)
+                        tag = item.Tag.Name;
+                    var ms = gr.MeasureString(tag, fnt);
+
                     gr.FillRectangle(Brushes.White, t1.X, t1.Y - 20, ms.Width, ms.Height);
-                    gr.DrawString(item.Tag.Name, fnt, Brushes.Black, t1.X, t1.Y - 20);
+                    gr.DrawString(tag, fnt, Brushes.Black, t1.X, t1.Y - 20);
                 }
             if (drag)
             {
@@ -162,9 +152,9 @@ namespace annotator1
             gr.DrawLine(Pens.Red, Transform(new PointF(0, 0)), Transform(new PointF(100, 0)));
             gr.DrawLine(Pens.Blue, Transform(new PointF(0, 0)), Transform(new PointF(0, 100)));
             var back = BackTransform(pictureBox1.PointToClient(Cursor.Position));
-            
-            gr.FillRectangle(new SolidBrush(Color.FromArgb(200,Color.White)), 0, 0, 100, 30);
-            gr.DrawString($"{Math.Round(back.X,1)}, {Math.Round(back.Y,1)}", SystemFonts.DefaultFont, Brushes.Red, 0, 0);
+
+            gr.FillRectangle(new SolidBrush(Color.FromArgb(200, Color.White)), 0, 0, 100, 30);
+            gr.DrawString($"{Math.Round(back.X, 1)}, {Math.Round(back.Y, 1)}", SystemFonts.DefaultFont, Brushes.Red, 0, 0);
             gr.DrawString(info, SystemFonts.DefaultFont, Brushes.Black, 0, 15);
             pictureBox1.Image = workBmp;
 
@@ -188,7 +178,7 @@ namespace annotator1
             {
                 crnt = null;
                 currentItem = null;
-                updateTagsList();
+                updateInfosList();
                 return;
             }
             crnt = Bitmap.FromFile(item.FullName) as Bitmap;
@@ -205,7 +195,7 @@ namespace annotator1
             }
             else
                 listView2.SelectedItems[0].BackColor = Color.LightBlue;
-            updateTagsList();
+            updateInfosList();
 
 
             redraw();
@@ -237,25 +227,32 @@ namespace annotator1
                 currentItem.Infos.Clear();
             }
 
-            updateTagsList();
+            updateInfosList();
         }
 
-        private void updateTagsList()
+        private void updateInfosList()
         {
 
             listView1.Items.Clear();
             if (currentItem == null) return;
             foreach (var item in currentItem.Infos)
             {
-                listView1.Items.Add(new ListViewItem(new string[] { item.Tag.Name }) { Tag = item });
+                if (item.Tag == null)
+                {
+                    var t = new ListViewItem(new string[] { "(null)" }) { Tag = item };
+                    t.BackColor = Color.Red;
+                    t.ForeColor = Color.White;
+                    listView1.Items.Add(t);
+                }
+                else
+                {
+                    listView1.Items.Add(new ListViewItem(new string[] { item.Tag.Name }) { Tag = item });
+                }
+
             }
         }
 
-        public class DataSetItem
-        {
-            public string Path;
-            public List<RectInfo> Infos = new List<RectInfo>();
-        }
+
         public List<DataSetItem> Items = new List<DataSetItem>();
         public static string CreateMD5(string input)
         {
@@ -291,56 +288,9 @@ namespace annotator1
                 return sb.ToString();
             }
         }
-        private void toolStripButton1_Click(object sender, EventArgs e)
-        {
-            SaveFileDialog sfd = new SaveFileDialog();
-            if (sfd.ShowDialog() != DialogResult.OK) return;
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("<?xml version=\"1.0\"?>");
-            sb.AppendLine("<root>");
-            foreach (var item in Items)
-            {
-                if (item.Infos.Count == 0) continue;
-                var h = CreateMD5(File.ReadAllBytes(item.Path));
-                sb.AppendLine($"<item hash=\"{h}\">");
-                sb.AppendLine("<path>");
-                sb.AppendLine("<![CDATA[" + item.Path + "]]>");
-                sb.AppendLine("</path>");
-                foreach (var info in item.Infos)
-                {
-                    sb.AppendLine($"<info x=\"{info.Rect.X}\" y=\"{info.Rect.Y}\" w=\"{info.Rect.Width}\" h=\"{info.Rect.Height}\" name=\"{info.Tag.Name}\"/>");
-                }
-                sb.AppendLine("</item>");
-            }
-            sb.AppendLine("</root>");
-            File.WriteAllText(sfd.FileName, sb.ToString());
-        }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK) return;
-            var doc = XDocument.Load(ofd.FileName);
-            Items.Clear();
-
-            foreach (var item in doc.Descendants("item"))
-            {
-                var hash = item.Attribute("hash").Value;
-                var path = item.Element("path").Value;
-                Items.Add(new DataSetItem() { Path = path });
-                foreach (var info in item.Elements("info"))
-                {
-                    var xx = int.Parse(info.Attribute("x").Value);
-                    var yy = int.Parse(info.Attribute("y").Value);
-                    var ww = int.Parse(info.Attribute("w").Value);
-                    var hh = int.Parse(info.Attribute("h").Value);
-
-                    Items.Last().Infos.Add(new RectInfo() { Tag = tags.First(), Rect = new Rectangle(xx, yy, ww, hh) });
-
-                }
-            }
-            info = "count: " + Items.Count;
-            Text = "items in dataset: " + Items.Count;
 
         }
 
@@ -356,7 +306,7 @@ namespace annotator1
             if (listView1.SelectedItems.Count == 0) return;
             var t = listView1.SelectedItems[0].Tag as RectInfo;
             currentItem.Infos.Remove(t);
-            updateTagsList();
+            updateInfosList();
             selected = null;
         }
 
@@ -367,7 +317,17 @@ namespace annotator1
 
         private void setTagToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
-
+            setTagToolStripMenuItem.DropDownItems.Clear();
+            foreach (var item in tags)
+            {
+                var c = new ToolStripMenuItem(item.Name) { Tag = item };
+                setTagToolStripMenuItem.DropDownItems.Add(c);
+                c.Click += (s, ee) =>
+                {
+                    selected.Tag = ((s as ToolStripMenuItem).Tag as Tag);
+                    updateInfosList();
+                };
+            }
         }
 
         private void setTagToolStripMenuItem_Click(object sender, EventArgs e)
@@ -385,87 +345,7 @@ namespace annotator1
             }
         }
 
-        private void toolStripButton3_Click(object sender, EventArgs e)
-        {
-            Directory.CreateDirectory("annotations");
-            Directory.CreateDirectory("images");
-            StringBuilder sb2 = new StringBuilder();
 
-            List<string> dirs = new List<string>();
-            Dictionary<string, string> alias = new Dictionary<string, string>();
-            foreach (var item in Items)
-            {
-                var fi = new FileInfo(item.Path);
-                var nm = fi.Name;
-                if (nm.Contains(" ")) continue;
-                var folder = new DirectoryInfo(fi.DirectoryName).Name;
-
-                if (!dirs.Contains(fi.DirectoryName.ToLower()))
-                {
-                    dirs.Add(fi.DirectoryName.ToLower());
-                    int suffix = 0;
-                    string p = folder;
-                    if (alias.ContainsValue(p))
-                    {
-                        while (true)
-                        {
-                            p = $"{folder}{suffix}";
-                            if (!alias.ContainsValue(p)) break;
-                            suffix++;
-                        }
-                    }
-                    alias.Add(fi.DirectoryName.ToLower(), p);
-                }
-
-                folder = alias[fi.DirectoryName.ToLower()];
-                Directory.CreateDirectory(Path.Combine("images", folder));
-
-
-                sb2.AppendLine($"{folder}/{nm} {folder}_{Path.GetFileNameWithoutExtension(nm)}.xml");
-
-                var mat = OpenCvSharp.Cv2.ImRead(item.Path);
-                var koef = 1024f / mat.Width;
-                mat = mat.Resize(new OpenCvSharp.Size(1024, koef * mat.Height));
-                var ipath = Path.Combine("images", folder, nm);
-                if (!File.Exists(ipath))
-                {
-                    mat.SaveImage(ipath);
-                }
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("<annotation>");
-                sb.AppendLine($"<folder>{folder}</folder>");
-                sb.AppendLine($"<filename>{nm}</filename>");
-                sb.AppendLine($"<source><database>Unknown</database></source>");
-                sb.AppendLine($"<size>");
-                sb.AppendLine($"<width>{1024}</width>");
-                sb.AppendLine($"<height>{(int)mat.Height}</height>");
-                sb.AppendLine($"<depth>{3}</depth>");
-                sb.AppendLine($"</size>");
-                sb.AppendLine($"<segmented>{0}</segmented>");
-                foreach (var info in item.Infos)
-                {
-                    sb.AppendLine("<object>");
-                    sb.AppendLine("<name>face</name>");
-                    sb.AppendLine("<pose>Unspecified</pose>");
-                    sb.AppendLine("<truncated>0</truncated>");
-                    sb.AppendLine("<difficult>0</difficult>");
-                    sb.AppendLine("<bndbox>");
-                    sb.AppendLine($"<xmin>{(int)(info.Rect.X * koef)}</xmin>");
-                    sb.AppendLine($"<ymin>{-(int)(info.Rect.Y * koef)}</ymin>");
-                    sb.AppendLine($"<xmax>{(int)(info.Rect.Right * koef)}</xmax>");
-                    sb.AppendLine($"<ymax>{(int)((-info.Rect.Y + info.Rect.Height) * koef)}</ymax>");
-                    sb.AppendLine("</bndbox>");
-                    sb.AppendLine("</object>");
-                }
-                sb.AppendLine("</annotation>");
-                var xpath = Path.Combine("annotations", folder + "_" + Path.GetFileNameWithoutExtension(nm) + ".xml");
-                if (!File.Exists(xpath))
-                {
-                    File.WriteAllText(xpath, sb.ToString());
-                }
-            }
-            File.WriteAllText("img_list.txt", sb2.ToString());
-        }
 
         private void toolStripButton4_Click(object sender, EventArgs e)
         {
@@ -473,17 +353,206 @@ namespace annotator1
             capt.Show();
         }
 
-        private void toolStripButton5_Click(object sender, EventArgs e)
+
+        private void addToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            TagEditDialog ted = new TagEditDialog();
+            ted.Set("tag1");
+            ted.ShowDialog();
+
+            if (tags.Any(z => z.Name == ted.Value))
+            {
+                MessageBox.Show("duplicate tag.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            tags.Add(new annotator1.Tag() { Name = ted.Value });
+            updateTagsList();
+        }
+
+
+
+        private void deleteToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (listView3.SelectedItems.Count == 0) return;
+            var tag = (listView3.SelectedItems[0].Tag as Tag);
+            tags.Remove(tag);
+            foreach (var item in Items)
+            {
+                foreach (var iitem in item.Infos)
+                {
+                    if (iitem.Tag == tag)
+                    {
+                        iitem.Tag = null;
+                    }
+                }
+            }
+            updateTagsList();
+        }
+
+        private void renameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listView3.SelectedItems.Count == 0) return;
+            var tag = (listView3.SelectedItems[0].Tag as Tag);
+
+            TagEditDialog ted = new TagEditDialog();
+            ted.Set(tag.Name);
+            ted.ShowDialog();
+
+            if (tags.Any(z => z.Name == ted.Value))
+            {
+                MessageBox.Show("duplicate tag.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            tag.Name = ted.Value;
+            updateTagsList();
+        }
+
+
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+            var f = new FileInfo(ofd.FileName);
+            loadDir(f.DirectoryName);
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = "xml|*.xml";
+            if (sfd.ShowDialog() != DialogResult.OK) return;
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\"?>");
+            sb.AppendLine("<root>");
+            sb.AppendLine("<tags>");
+            foreach (var item in tags)
+            {
+                if (string.IsNullOrEmpty(item.Name)) throw new Exception("tag empty string");
+                sb.AppendLine($"<tag name=\"{item.Name}\"/>");
+            }
+            sb.AppendLine("</tags>");
+            foreach (var item in Items)
+            {
+                if (item.Infos.Count == 0) continue;
+                var h = CreateMD5(File.ReadAllBytes(item.Path));
+                sb.AppendLine($"<item hash=\"{h}\">");
+                sb.AppendLine("<path>");
+                sb.AppendLine("<![CDATA[" + item.Path + "]]>");
+                sb.AppendLine("</path>");
+                foreach (var info in item.Infos)
+                {
+                    string tagn = info.Tag == null ? string.Empty : info.Tag.Name;
+                    sb.AppendLine($"<info x=\"{info.Rect.X}\" y=\"{info.Rect.Y}\" w=\"{info.Rect.Width}\" h=\"{info.Rect.Height}\" name=\"{tagn}\"/>");
+                }
+                sb.AppendLine("</item>");
+            }
+            sb.AppendLine("</root>");
+            File.WriteAllText(sfd.FileName, sb.ToString());
+        }
+
+        private void loadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "xml|*.xml";
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+            if (!ofd.FileName.EndsWith("xml"))
+            {
+                MessageBox.Show("only xml supported.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            try
+            {
+                var doc = XDocument.Load(ofd.FileName);
+                Items.Clear();
+                tags.Clear();
+                foreach (var item in doc.Descendants("tag"))
+                {
+                    var tag = item.Attribute("name").Value;
+                    tags.Add(new annotator1.Tag() { Name = tag });
+                }
+                updateTagsList();
+
+                foreach (var item in doc.Descendants("item"))
+                {
+                    var hash = item.Attribute("hash").Value;
+                    var path = item.Element("path").Value;
+                    Items.Add(new DataSetItem() { Path = path });
+                    foreach (var info in item.Elements("info"))
+                    {
+                        var xx = int.Parse(info.Attribute("x").Value);
+                        var yy = int.Parse(info.Attribute("y").Value);
+                        var ww = int.Parse(info.Attribute("w").Value);
+                        var hh = int.Parse(info.Attribute("h").Value);
+
+                        var tag = info.Attribute("name").Value;
+                        Items.Last().Infos.Add(new RectInfo() { Tag = tags.FirstOrDefault(z => z.Name == tag), Rect = new Rectangle(xx, yy, ww, hh) });
+
+                    }
+                }
+                info = "count: " + Items.Count;
+                Text = "items in dataset: " + Items.Count;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void wIDEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            WiderExportDialog wed = new WiderExportDialog();
+            wed.Init(Items.ToArray(), tags.ToArray());
+            wed.ShowDialog();
+
+        }
+
+        private void clearToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             Items.Clear();
             info = "count: " + Items.Count;
             Text = "items in dataset: " + Items.Count;
-
         }
 
-        private void addToolStripMenuItem_Click(object sender, EventArgs e)
+        public void FitToPoints(PictureBox pb, PointF[] points)
         {
+            var maxx = points.Max(z => z.X);
+            var minx = points.Min(z => z.X);
+            var maxy = points.Max(z => z.Y);
+            var miny = points.Min(z => z.Y);
 
+            var w = pb.Width;
+            var h = pb.Height;
+
+            var dx = maxx - minx;
+            var kx = w / dx;
+            var dy = maxy - miny;
+            var ky = h / dy;
+
+            var oz = zoom;
+            var sz1 = new Size((int)(dx * kx), (int)(dy * kx));
+            var sz2 = new Size((int)(dx * ky), (int)(dy * ky));
+            zoom = kx;
+            if (sz1.Width > w || sz1.Height > h) zoom = ky;
+
+            var x = dx / 2 + minx;
+            var y = dy / 2 + miny;
+
+
+            sx = (w / 2f) / zoom - x;
+            sy = -((h / 2f) / zoom + y);
+
+            var test = Transform(new PointF(x, y));
+
+        }
+        private void toolStripButton6_Click(object sender, EventArgs e)
+        {
+            FitToPoints(pictureBox1, new PointF[] { new PointF(0, 0), new PointF(crnt.Width, 0), new PointF(0, -crnt.Height) });
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
@@ -530,7 +599,7 @@ namespace annotator1
                         });
                     }
                 }
-                updateTagsList();
+                updateInfosList();
                 drag = false;
             }
         }
@@ -553,6 +622,12 @@ namespace annotator1
     public class Tag
     {
         public string Name;
+    }
+
+    public class DataSetItem
+    {
+        public string Path;
+        public List<RectInfo> Infos = new List<RectInfo>();
     }
 }
 

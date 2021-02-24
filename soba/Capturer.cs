@@ -49,44 +49,54 @@ namespace annotator1
         RECT rect;
         int cntr = 0;
         Mat lastCaptured;
+
+        void captureHwnd(IntPtr wnd)
+        {
+            if (pictureBox1.Image != null)
+            {
+                pictureBox1.Image.Dispose();
+            }
+
+            var temp = User32.CaptureImage(wnd);
+            lastCaptured = BitmapConverter.ToMat(temp);
+            pictureBox1.Image = temp;
+
+            hwn = wnd;
+            //    label1.Text = "Handle: " + wnd.ToString();
+
+            User32.GetWindowRect(hwn, out rect);
+
+            if (bmpScreenshot != null)
+            {
+                bmpScreenshot.Dispose();
+            }
+            if (gfxScreenshot != null)
+            {
+                gfxScreenshot.Dispose();
+            }
+            bmpScreenshot = new Bitmap((rect.Width / 2 + 1) * 2, (rect.Height / 2 + 1) * 2, PixelFormat.Format24bppRgb);
+            gfxScreenshot = Graphics.FromImage(bmpScreenshot);
+        }
+
+        IntPtr lastHwnd;
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count > 0)
-            {
-
-                IntPtr wnd = (IntPtr)listView1.SelectedItems[0].Tag;
-                if (pictureBox1.Image != null)
-                {
-                    pictureBox1.Image.Dispose();
-                }
-
-                var temp = User32.CaptureImage(wnd);
-                lastCaptured = BitmapConverter.ToMat(temp);
-                pictureBox1.Image = temp;
-
-                hwn = wnd;
-                //    label1.Text = "Handle: " + wnd.ToString();
-
-                User32.GetWindowRect(hwn, out rect);
-
-                if (bmpScreenshot != null)
-                {
-                    bmpScreenshot.Dispose();
-                }
-                if (gfxScreenshot != null)
-                {
-                    gfxScreenshot.Dispose();
-                }
-                bmpScreenshot = new Bitmap((rect.Width / 2 + 1) * 2, (rect.Height / 2 + 1) * 2, PixelFormat.Format24bppRgb);
-                gfxScreenshot = Graphics.FromImage(bmpScreenshot);
-
-            }
+            if (listView1.SelectedItems.Count <= 0) return;
+            IntPtr wnd = (IntPtr)listView1.SelectedItems[0].Tag;
+            lastHwnd = wnd;
+            captureHwnd(wnd);
         }
+
         List<Mat> saved = new List<Mat>();
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
+            capture();
+        }
+        
+        private void capture()
+        {
             saved.Add(lastCaptured.Clone());
-            listView2.Items.Add(new ListViewItem("frame") { Tag = saved.Last() });
+            listView2.Items.Add(new ListViewItem("frame #"+listView2.Items.Count) { Tag = saved.Last() });
         }
 
         private void listView2_SelectedIndexChanged(object sender, EventArgs e)
@@ -125,8 +135,32 @@ namespace annotator1
             listView2.Items.Clear();
             foreach (var item in saved)
             {
-                listView2.Items.Add(new ListViewItem("frame") { Tag = item });
+                listView2.Items.Add(new ListViewItem("frame #"+listView2.Items.Count) { Tag = item });
 
+            }
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            timer1.Enabled = checkBox1.Checked;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            captureHwnd(lastHwnd);
+            capture();
+        }
+
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                timer1.Interval = int.Parse(textBox2.Text);
+                textBox2.BackColor = Color.White;
+            }
+            catch (Exception ex)
+            {
+                textBox2.BackColor = Color.Red;
             }
         }
     }
