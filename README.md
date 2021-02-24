@@ -1,0 +1,2 @@
+# SOBA
+Simple object annotator
