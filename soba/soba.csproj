@@ -71,6 +71,12 @@
     <Compile Include="Capturer.Designer.cs">
       <DependentUpon>Capturer.cs</DependentUpon>
     </Compile>
+    <Compile Include="Fetcher.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Fetcher.Designer.cs">
+      <DependentUpon>Fetcher.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -95,6 +101,9 @@
     </Compile>
     <EmbeddedResource Include="Capturer.resx">
       <DependentUpon>Capturer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Fetcher.resx">
+      <DependentUpon>Fetcher.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>

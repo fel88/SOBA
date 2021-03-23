@@ -552,7 +552,15 @@ namespace annotator1
         }
         private void toolStripButton6_Click(object sender, EventArgs e)
         {
-            FitToPoints(pictureBox1, new PointF[] { new PointF(0, 0), new PointF(crnt.Width, 0), new PointF(0, -crnt.Height) });
+            if (crnt != null)
+                FitToPoints(pictureBox1, new PointF[] { new PointF(0, 0), new PointF(crnt.Width, 0), new PointF(0, -crnt.Height) });
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            Fetcher ff = new Fetcher();
+            ff.StartPosition = FormStartPosition.CenterParent;
+            ff.Show();
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
