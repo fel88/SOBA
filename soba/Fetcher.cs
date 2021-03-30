@@ -113,6 +113,6 @@ namespace annotator1
             pause = false;
             oneFrameStep = true;
             oneFrameStepDir = -1;
-        }
+        }     
     }
 }
