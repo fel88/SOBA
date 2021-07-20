@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Xml.Linq;
 
-namespace annotator1
+namespace Soba
 {
     public partial class Form1 : Form
     {
@@ -17,13 +18,24 @@ namespace annotator1
             workBmp = new Bitmap(2000, 1500);
             gr = Graphics.FromImage(workBmp);
             ResizeEnd += Form1_ResizeEnd;
-            tags.Add(new annotator1.Tag() { Name = "tag1" });
-
-
+            tags.Add(new Tag() { Name = "tag1" });
 
             pictureBox1.MouseWheel += PictureBox1_MouseWheel;
             updateTagsList();
+            Load += Form1_Load;
+
+
+            //hack
+            toolStripButton2.BackgroundImageLayout = ImageLayout.None;
+            toolStripButton2.BackgroundImage = new Bitmap(1, 1);
+            toolStripButton2.BackColor = Color.LightGreen;
         }
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            mf = new MessageFilter();
+            Application.AddMessageFilter(mf);
+        }
+        MessageFilter mf = null;
 
         void updateTagsList()
         {
@@ -199,6 +211,10 @@ namespace annotator1
 
 
             redraw();
+            if (autoFit)
+            {
+                fitAll();
+            }
             info = "count: " + Items.Count(z => z.Infos.Count > 0);
         }
         string info = "";
@@ -358,14 +374,14 @@ namespace annotator1
         {
             TagEditDialog ted = new TagEditDialog();
             ted.Set("tag1");
-            ted.ShowDialog();
+            if (ted.ShowDialog() != DialogResult.OK) return;
 
             if (tags.Any(z => z.Name == ted.Value))
             {
                 MessageBox.Show("duplicate tag.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            tags.Add(new annotator1.Tag() { Name = ted.Value });
+            tags.Add(new Tag() { Name = ted.Value });
             updateTagsList();
         }
 
@@ -407,12 +423,6 @@ namespace annotator1
             updateTagsList();
         }
 
-
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -474,7 +484,7 @@ namespace annotator1
                 foreach (var item in doc.Descendants("tag"))
                 {
                     var tag = item.Attribute("name").Value;
-                    tags.Add(new annotator1.Tag() { Name = tag });
+                    tags.Add(new Tag() { Name = tag });
                 }
                 updateTagsList();
 
@@ -497,6 +507,7 @@ namespace annotator1
                 }
                 info = "count: " + Items.Count;
                 Text = "items in dataset: " + Items.Count;
+                loadDir(new FileInfo(ofd.FileName).DirectoryName);
             }
             catch (Exception ex)
             {
@@ -550,17 +561,53 @@ namespace annotator1
             var test = Transform(new PointF(x, y));
 
         }
-        private void toolStripButton6_Click(object sender, EventArgs e)
+
+        void fitAll()
         {
             if (crnt != null)
                 FitToPoints(pictureBox1, new PointF[] { new PointF(0, 0), new PointF(crnt.Width, 0), new PointF(0, -crnt.Height) });
         }
 
+        private void toolStripButton6_Click(object sender, EventArgs e)
+        {
+            fitAll();
+        }
+
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            Fetcher ff = new Fetcher();
-            ff.StartPosition = FormStartPosition.CenterParent;
+            Fetcher ff = new Fetcher();            
             ff.Show();
+        }
+
+
+        bool autoFit = true;
+
+        private void toolStripButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            autoFit = toolStripButton2.Checked;
+            if (autoFit)
+            {
+                fitAll();
+                toolStripButton2.BackColor = Color.LightGreen;
+            }
+            else
+            {
+                toolStripButton2.BackColor = Color.Transparent;
+            }
+        }
+
+        private void openToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (listView2.SelectedItems.Count == 0) return;
+            var tag = listView2.SelectedItems[0].Tag;
+            if (tag is FileInfo fin)
+            {
+                Process.Start(fin.FullName);
+            }
+            if (tag is DirectoryInfo din)
+            {
+                Process.Start(din.FullName);
+            }
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)

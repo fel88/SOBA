@@ -1,17 +1,11 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace annotator1
+namespace Soba
 {
     public partial class Fetcher : Form
     {
@@ -42,7 +36,7 @@ namespace annotator1
 
                 cap.Set(0, forwPosPercetange * secs);//posmsec 0
             }
-            
+
             if (oneFrameStep && oneFrameStepDir == -1)
             {
                 var pf = cap.Get(1);//1 posframes
@@ -81,6 +75,7 @@ namespace annotator1
                 var bmp = (item as ListViewItem).Tag as Bitmap;
                 bmp.Save(Path.Combine(dir.FullName, $"{cntr++}.jpg"));
             }
+            MessageBox.Show($"{listView1.Items.Count} were saved to {dir.FullName}", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         bool forwTo = false;
         double forwPosPercetange = 0;
@@ -113,6 +108,6 @@ namespace annotator1
             pause = false;
             oneFrameStep = true;
             oneFrameStepDir = -1;
-        }     
+        }
     }
 }

@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace annotator1
+namespace Soba
 {
     public partial class TagEditDialog : Form
     {
@@ -31,6 +31,7 @@ namespace annotator1
                 textBox1.ForeColor = Color.White;
                 return;
             }
+            DialogResult = DialogResult.OK;
             Close();
         }
 

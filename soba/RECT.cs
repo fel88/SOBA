@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace annotator1
+namespace Soba
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT

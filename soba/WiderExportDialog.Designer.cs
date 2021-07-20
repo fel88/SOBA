@@ -1,4 +1,4 @@
-﻿namespace annotator1
+﻿namespace Soba
 {
     partial class WiderExportDialog
     {

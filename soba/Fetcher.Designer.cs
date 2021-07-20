@@ -1,4 +1,4 @@
-﻿namespace annotator1
+﻿namespace Soba
 {
     partial class Fetcher
     {
@@ -240,6 +240,7 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.toolStrip1);
             this.Name = "Fetcher";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Fetcher";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.toolStrip1.ResumeLayout(false);

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace annotator1
+namespace Soba
 {
     public partial class WiderExportDialog : Form
     {
