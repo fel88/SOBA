@@ -610,6 +610,12 @@ namespace Soba
             }
         }
 
+        private void toolStripButton3_Click(object sender, EventArgs e)
+        {
+            grabcut g = new grabcut();
+            g.Show();
+        }
+
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             var pos = pictureBox1.PointToClient(Cursor.Position);

@@ -71,6 +71,8 @@
     <Compile Include="Capturer.Designer.cs">
       <DependentUpon>Capturer.cs</DependentUpon>
     </Compile>
+    <Compile Include="DrawingContext.cs" />
+    <Compile Include="EventWrapperPictureBox.cs" />
     <Compile Include="Fetcher.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -82,6 +84,12 @@
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="grabcut.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="grabcut.Designer.cs">
+      <DependentUpon>grabcut.cs</DependentUpon>
     </Compile>
     <Compile Include="MessageFilter.cs" />
     <Compile Include="Program.cs" />
@@ -108,6 +116,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="grabcut.resx">
+      <DependentUpon>grabcut.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
