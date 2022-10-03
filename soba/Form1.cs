@@ -385,7 +385,16 @@ namespace Soba
             updateTagsList();
         }
 
-
+        Tag AddOrGetTag(string name)
+        {
+            var f = tags.FirstOrDefault(z => z.Name == name);
+            if (f == null)
+            {
+                f = new Soba.Tag() { Name = name };
+                tags.Add(f);
+            }
+            return f;
+        }
 
         private void deleteToolStripMenuItem1_Click(object sender, EventArgs e)
         {
@@ -575,7 +584,7 @@ namespace Soba
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            Fetcher ff = new Fetcher();            
+            Fetcher ff = new Fetcher();
             ff.Show();
         }
 
@@ -616,6 +625,50 @@ namespace Soba
             g.Show();
         }
 
+        private void wIDERToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "WIDER inage list (*.txt)|*.txt";
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+            Items.Clear();
+            tags.Clear();
+            var fin = new FileInfo(ofd.FileName);
+            var anp = Path.Combine(fin.Directory.FullName, "annotations");
+            var imp = Path.Combine(fin.Directory.FullName, "images");
+            foreach (var line in File.ReadLines(ofd.FileName))
+            {
+                var aa = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToArray();
+                var ap = Path.Combine(anp, aa[1]);
+                var doc1 = XDocument.Load(ap);
+                var dsi = new DataSetItem() { Path = Path.Combine(imp, aa[0]).Replace("/","\\") };
+                Items.Add(dsi);
+                foreach (var item in doc1.Descendants("object"))
+                {
+                    var tag = AddOrGetTag(item.Element("name").Value);
+                    var bb = item.Element("bndbox");
+
+                    var rect = new Rectangle();
+                    rect.X = int.Parse(bb.Element("xmin").Value);
+                    rect.Y = int.Parse(bb.Element("ymin").Value);
+                    rect.Width = int.Parse(bb.Element("xmax").Value) - rect.X;
+                    rect.Height = int.Parse(bb.Element("ymax").Value) - rect.Y;
+                    
+                    rect.Y *= -1;
+                    dsi.Infos.Add(new RectInfo() { Tag = tag, Rect = rect });
+                }
+            }
+            updateTagsList();
+            updateInfosList();
+            updateItemsList();
+        }
+        void updateItemsList()
+        {
+            listView2.Items.Clear();
+            foreach (var item in Items)
+            {
+                listView2.Items.Add(new ListViewItem(new string[] { Path.GetFileName(item.Path) }) { Tag = new FileInfo(item.Path) });
+            }
+        }
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             var pos = pictureBox1.PointToClient(Cursor.Position);
@@ -667,10 +720,7 @@ namespace Soba
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-
-            {
-                redraw();
-            }
+            redraw();
         }
     }
 
