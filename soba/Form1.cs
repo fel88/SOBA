@@ -18,15 +18,34 @@ namespace Soba
 
             Load += Form1_Load;
 
-            workBmp = new Bitmap(2000, 1500);
-            gr = Graphics.FromImage(workBmp);
+            pictureBox1.Paint += PictureBox1_Paint;
+            //workBmp = new Bitmap(2000, 1500);
+            //gr = Graphics.FromImage(workBmp);
             ResizeEnd += Form1_ResizeEnd;
 
             pictureBox1.MouseWheel += PictureBox1_MouseWheel;
+
+            pictureBox1.MouseClick += PictureBox1_MouseClick;
             //hack
             toolStripButton2.BackgroundImageLayout = ImageLayout.None;
             toolStripButton2.BackgroundImage = new Bitmap(1, 1);
             toolStripButton2.BackColor = Color.LightGreen;
+        }
+
+        private void PictureBox1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (hovered == null) return;
+
+            selected = hovered;
+            if (e.Button == MouseButtons.Right)
+            {
+                contextMenuStrip1.Show(Cursor.Position);
+            }
+        }
+
+        private void PictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            redraw(e.Graphics);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -55,7 +74,7 @@ namespace Soba
             listView3.Items.Clear();
             foreach (var item in tags)
             {
-                listView3.Items.Add(new ListViewItem(item.Name) { Tag = item });
+                listView3.Items.Add(new ListViewItem(new string[] { item.Name, Items.Count(z => z.Infos.Any(uu => uu.Tag == item)).ToString() }) { Tag = item });
             }
         }
         public float ZoomFactor = 1.2f;
@@ -84,10 +103,10 @@ namespace Soba
 
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
-            redraw();
+            //redraw();
         }
 
-        Bitmap workBmp;
+        //Bitmap workBmp;
 
         void loadDir(string dpath)
         {
@@ -132,10 +151,12 @@ namespace Soba
 
 
         Bitmap crnt;
-        Graphics gr;
+        //Graphics gr;
         float zoom = 1;
-        void redraw()
+        void redraw(Graphics gr)
         {
+            updateHovered();
+            ////////////
             gr.Clear(Color.White);
 
             UpdateDrag();
@@ -152,12 +173,15 @@ namespace Soba
                     var t1 = Transform(item.Rect.Location);
                     if (selected == item)
                     {
-                        var pen2 = new Pen(Color.Red, 2);
-                        gr.DrawRectangle(pen2, t1.X, t1.Y, item.Rect.Width * zoom, item.Rect.Height * zoom);
+                        pen = new Pen(Color.Red, 2);
                     }
-                    else
+                    if (hovered == item)
+                    {
+                        pen = new Pen(Color.Yellow, 2);
+                    }
 
-                        gr.DrawRectangle(pen, t1.X, t1.Y, item.Rect.Width * zoom, item.Rect.Height * zoom);
+
+                    gr.DrawRectangle(pen, t1.X, t1.Y, item.Rect.Width * zoom, item.Rect.Height * zoom);
 
                     var fnt = new Font("Consolas", 14);
                     var tag = "(null)";
@@ -181,8 +205,27 @@ namespace Soba
             gr.FillRectangle(new SolidBrush(Color.FromArgb(200, Color.White)), 0, 0, 100, 30);
             gr.DrawString($"{Math.Round(back.X, 1)}, {Math.Round(back.Y, 1)}", SystemFonts.DefaultFont, Brushes.Red, 0, 0);
             gr.DrawString(info, SystemFonts.DefaultFont, Brushes.Black, 0, 15);
-            pictureBox1.Image = workBmp;
+            //pictureBox1.Image = workBmp;
 
+        }
+
+        private void updateHovered()
+        {
+            if (currentItem == null) return;
+
+            hovered = null;
+            var pos = BackTransform(pictureBox1.PointToClient(Cursor.Position));
+            var xx = pos.X;
+            var yy = pos.Y;
+            foreach (var item in currentItem.Infos)
+            {
+                var t1 = (item.Rect.Location);
+                if (new RectangleF(t1.X, t1.Y - item.Rect.Height, item.Rect.Width, item.Rect.Height).IntersectsWith(new RectangleF(xx, yy, 1, 1)))
+                {
+                    hovered = item;
+                    break;
+                }
+            }
         }
 
         public List<DataSetItem> Items => dataset.Items;
@@ -227,7 +270,8 @@ namespace Soba
             updateInfosList();
 
 
-            redraw();
+            pictureBox1.Invalidate();
+            //redraw();
             if (autoFit)
             {
                 fitAll();
@@ -328,6 +372,7 @@ namespace Soba
         }
 
         RectInfo selected = null;
+        RectInfo hovered = null;
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listView1.SelectedItems.Count == 0) return;
@@ -709,7 +754,7 @@ namespace Soba
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            redraw();
+            pictureBox1.Invalidate();
         }
     }
 
