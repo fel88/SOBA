@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("SOBA")]
 [assembly: AssemblyDescription("Simple object annotator")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("fel88")]
-[assembly: AssemblyProduct("")]
-[assembly: AssemblyCopyright("Copyright © 2021")]
+[assembly: AssemblyCompany("https://github.com/fel88")]
+[assembly: AssemblyProduct("SOBA: simple object annotator")]
+[assembly: AssemblyCopyright("Copyleft © 2021-2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

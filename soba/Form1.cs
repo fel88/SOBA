@@ -15,27 +15,40 @@ namespace Soba
         public Form1()
         {
             InitializeComponent();
+
+            Load += Form1_Load;
+
             workBmp = new Bitmap(2000, 1500);
             gr = Graphics.FromImage(workBmp);
             ResizeEnd += Form1_ResizeEnd;
-            tags.Add(new Tag() { Name = "tag1" });
 
             pictureBox1.MouseWheel += PictureBox1_MouseWheel;
-            updateTagsList();
-            Load += Form1_Load;
-
-
             //hack
             toolStripButton2.BackgroundImageLayout = ImageLayout.None;
             toolStripButton2.BackgroundImage = new Bitmap(1, 1);
             toolStripButton2.BackColor = Color.LightGreen;
         }
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            //tags.Add(new Tag() { Name = "tag1" });
+            updateTagsList();
+
             mf = new MessageFilter();
             Application.AddMessageFilter(mf);
         }
+
         MessageFilter mf = null;
+        Dataset dataset;
+
+        public void Init(Dataset _dataset)
+        {
+            Text = "Dataset: " + _dataset.Name;
+            dataset = _dataset;
+            updateTagsList();
+            updateInfosList();
+            updateItemsList();
+        }
 
         void updateTagsList()
         {
@@ -171,6 +184,10 @@ namespace Soba
             pictureBox1.Image = workBmp;
 
         }
+
+        public List<DataSetItem> Items => dataset.Items;
+        public List<Tag> tags => dataset.Tags;
+
         public PointF BackTransform(PointF p1)
         {
             var posx = (p1.X / zoom - sx);
@@ -197,7 +214,7 @@ namespace Soba
             var fr = Items.FirstOrDefault(z => z.Path.ToLower() == item.FullName.ToLower());
             if (fr == null)
             {
-                Items.Add(new DataSetItem() { Path = item.FullName });
+                Items.Add(new DataSetItem(dataset) { Path = item.FullName });
                 fr = Items.Last();
             }
             currentItem = fr;
@@ -218,7 +235,7 @@ namespace Soba
             info = "count: " + Items.Count(z => z.Infos.Count > 0);
         }
         string info = "";
-        List<Tag> tags = new List<Tag>();
+
         //List<RectInfo> infos = new List<RectInfo>();
         public void UpdateDrag()
         {
@@ -269,7 +286,7 @@ namespace Soba
         }
 
 
-        public List<DataSetItem> Items = new List<DataSetItem>();
+
         public static string CreateMD5(string input)
         {
             // Use input string to calculate MD5 hash
@@ -340,7 +357,20 @@ namespace Soba
                 setTagToolStripMenuItem.DropDownItems.Add(c);
                 c.Click += (s, ee) =>
                 {
+                    if (dataset.ReadOnly)
+                    {
+                        if (MessageBox.Show("The dataset is currently read-only. Do you want to make the dataset editable?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                        {
+                            dataset.ReadOnly = false;
+                        }
+                        else
+                            return;
+                    }
                     selected.Tag = ((s as ToolStripMenuItem).Tag as Tag);
+                    if (selected.Parent != null)
+                    {
+                        selected.Parent.Refresh();
+                    }
                     updateInfosList();
                 };
             }
@@ -385,16 +415,7 @@ namespace Soba
             updateTagsList();
         }
 
-        Tag AddOrGetTag(string name)
-        {
-            var f = tags.FirstOrDefault(z => z.Name == name);
-            if (f == null)
-            {
-                f = new Soba.Tag() { Name = name };
-                tags.Add(f);
-            }
-            return f;
-        }
+
 
         private void deleteToolStripMenuItem1_Click(object sender, EventArgs e)
         {
@@ -501,7 +522,7 @@ namespace Soba
                 {
                     var hash = item.Attribute("hash").Value;
                     var path = item.Element("path").Value;
-                    Items.Add(new DataSetItem() { Path = path });
+                    Items.Add(new DataSetItem(dataset) { Path = path });
                     foreach (var info in item.Elements("info"))
                     {
                         var xx = int.Parse(info.Attribute("x").Value);
@@ -627,40 +648,9 @@ namespace Soba
 
         private void wIDERToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "WIDER inage list (*.txt)|*.txt";
-            if (ofd.ShowDialog() != DialogResult.OK) return;
-            Items.Clear();
-            tags.Clear();
-            var fin = new FileInfo(ofd.FileName);
-            var anp = Path.Combine(fin.Directory.FullName, "annotations");
-            var imp = Path.Combine(fin.Directory.FullName, "images");
-            foreach (var line in File.ReadLines(ofd.FileName))
-            {
-                var aa = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToArray();
-                var ap = Path.Combine(anp, aa[1]);
-                var doc1 = XDocument.Load(ap);
-                var dsi = new DataSetItem() { Path = Path.Combine(imp, aa[0]).Replace("/","\\") };
-                Items.Add(dsi);
-                foreach (var item in doc1.Descendants("object"))
-                {
-                    var tag = AddOrGetTag(item.Element("name").Value);
-                    var bb = item.Element("bndbox");
 
-                    var rect = new Rectangle();
-                    rect.X = int.Parse(bb.Element("xmin").Value);
-                    rect.Y = int.Parse(bb.Element("ymin").Value);
-                    rect.Width = int.Parse(bb.Element("xmax").Value) - rect.X;
-                    rect.Height = int.Parse(bb.Element("ymax").Value) - rect.Y;
-                    
-                    rect.Y *= -1;
-                    dsi.Infos.Add(new RectInfo() { Tag = tag, Rect = rect });
-                }
-            }
-            updateTagsList();
-            updateInfosList();
-            updateItemsList();
         }
+
         void updateItemsList()
         {
             listView2.Items.Clear();
@@ -707,7 +697,6 @@ namespace Soba
                     {
                         currentItem.Infos.Add(new RectInfo()
                         {
-
                             Rect = new Rectangle(startp.X, startp.Y, w, h),
                             Tag = tags.Count > 0 ? tags[0] : null
                         });
@@ -726,6 +715,7 @@ namespace Soba
 
     public class RectInfo
     {
+        public DataSetItem Parent;
         public Rectangle Rect;
         public Tag Tag;
     }
@@ -733,12 +723,6 @@ namespace Soba
     public class Tag
     {
         public string Name;
-    }
-
-    public class DataSetItem
-    {
-        public string Path;
-        public List<RectInfo> Infos = new List<RectInfo>();
     }
 }
 

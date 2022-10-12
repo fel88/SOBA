@@ -65,12 +65,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AboutBox1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AboutBox1.Designer.cs">
+      <DependentUpon>AboutBox1.cs</DependentUpon>
+    </Compile>
     <Compile Include="Capturer.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Capturer.Designer.cs">
       <DependentUpon>Capturer.cs</DependentUpon>
     </Compile>
+    <Compile Include="Dataset.cs" />
+    <Compile Include="DataSetItem.cs" />
     <Compile Include="DrawingContext.cs" />
     <Compile Include="EventWrapperPictureBox.cs" />
     <Compile Include="Fetcher.cs">
@@ -91,6 +99,12 @@
     <Compile Include="grabcut.Designer.cs">
       <DependentUpon>grabcut.cs</DependentUpon>
     </Compile>
+    <Compile Include="mdi.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="mdi.Designer.cs">
+      <DependentUpon>mdi.cs</DependentUpon>
+    </Compile>
     <Compile Include="MessageFilter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -102,12 +116,17 @@
       <DependentUpon>TagEditDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="User32.cs" />
+    <Compile Include="WIDERDataset.cs" />
+    <Compile Include="WIDERDataSetItem.cs" />
     <Compile Include="WiderExportDialog.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="WiderExportDialog.Designer.cs">
       <DependentUpon>WiderExportDialog.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="AboutBox1.resx">
+      <DependentUpon>AboutBox1.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Capturer.resx">
       <DependentUpon>Capturer.cs</DependentUpon>
     </EmbeddedResource>
@@ -119,6 +138,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="grabcut.resx">
       <DependentUpon>grabcut.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="mdi.resx">
+      <DependentUpon>mdi.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
