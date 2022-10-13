@@ -32,6 +32,11 @@ namespace Soba
             toolStripButton2.BackColor = Color.LightGreen;
         }
 
+        private void CheckedListBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            updateItemsList();
+        }
+
         private void PictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
             if (hovered == null) return;
@@ -72,11 +77,24 @@ namespace Soba
         void updateTagsList()
         {
             listView3.Items.Clear();
+            groupBox1.Controls.Clear();
+            int yy = 18;
+            int hh = 20;
             foreach (var item in tags)
             {
+                CheckBox cb = new CheckBox() { Tag = item, Text = item.Name, Left = 10, Top = yy };
+                yy += hh;
+                cb.CheckedChanged += Cb_CheckedChanged;
+                groupBox1.Controls.Add(cb);
                 listView3.Items.Add(new ListViewItem(new string[] { item.Name, Items.Count(z => z.Infos.Any(uu => uu.Tag == item)).ToString() }) { Tag = item });
             }
         }
+
+        private void Cb_CheckedChanged(object sender, EventArgs e)
+        {
+            updateItemsList();
+        }
+
         public float ZoomFactor = 1.2f;
 
         private void PictureBox1_MouseWheel(object sender, MouseEventArgs e)
@@ -245,7 +263,7 @@ namespace Soba
                 //loadDir(di.FullName);
                 return;
             }
-            var item = listView2.SelectedItems[0].Tag as FileInfo;
+            var item = new FileInfo((listView2.SelectedItems[0].Tag as DataSetItem).Path);
             if (!(item.Extension.ToLower().EndsWith("jpg") || item.Extension.ToLower().EndsWith("bmp") || item.Extension.ToLower().EndsWith("png")))
             {
                 crnt = null;
@@ -309,7 +327,6 @@ namespace Soba
 
         private void updateInfosList()
         {
-
             listView1.Items.Clear();
             if (currentItem == null) return;
             foreach (var item in currentItem.Infos)
@@ -383,9 +400,22 @@ namespace Soba
         {
             if (listView1.SelectedItems.Count == 0) return;
             var t = listView1.SelectedItems[0].Tag as RectInfo;
+
+            TryMakeDatasetWritable();
+            if (dataset.ReadOnly)
+                return;
+
             currentItem.Infos.Remove(t);
+            currentItem.Refresh();
+
             updateInfosList();
             selected = null;
+        }
+
+        void TryMakeDatasetWritable()
+        {
+            if (dataset.ReadOnly && MessageBox.Show("The dataset is currently read-only. Do you want to make the dataset editable?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                dataset.ReadOnly = false;
         }
 
         private void setTagToolStripMenuItem_EnabledChanged(object sender, EventArgs e)
@@ -402,20 +432,12 @@ namespace Soba
                 setTagToolStripMenuItem.DropDownItems.Add(c);
                 c.Click += (s, ee) =>
                 {
-                    if (dataset.ReadOnly)
-                    {
-                        if (MessageBox.Show("The dataset is currently read-only. Do you want to make the dataset editable?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                        {
-                            dataset.ReadOnly = false;
-                        }
-                        else
-                            return;
-                    }
+                    TryMakeDatasetWritable();
+                    if (dataset.ReadOnly)                    
+                        return;
+                    
                     selected.Tag = ((s as ToolStripMenuItem).Tag as Tag);
-                    if (selected.Parent != null)
-                    {
-                        selected.Parent.Refresh();
-                    }
+                    selected.Parent.Refresh();
                     updateInfosList();
                 };
             }
@@ -691,19 +713,35 @@ namespace Soba
             g.Show();
         }
 
-        private void wIDERToolStripMenuItem_Click(object sender, EventArgs e)
-        {
 
+        Tag[] getFilterTags()
+        {
+            List<Tag> ret = new List<Tag>();
+            foreach (var item in groupBox1.Controls)
+            {
+                if (!(item is CheckBox cb)) continue;
+                if (!cb.Checked) continue;
+                ret.Add(cb.Tag as Tag);
+            }
+            return ret.ToArray();
         }
 
         void updateItemsList()
         {
             listView2.Items.Clear();
+            var ftags = getFilterTags();
             foreach (var item in Items)
             {
-                listView2.Items.Add(new ListViewItem(new string[] { Path.GetFileName(item.Path) }) { Tag = new FileInfo(item.Path) });
+                if (ftags.Length > 0 && !ftags.Intersect(item.Infos.Select(z => z.Tag)).Any())
+                    continue;
+
+                //listView2.Items.Add(new ListViewItem(new string[] { Path.GetFileName(item.Path) }) { Tag = new FileInfo(item.Path) });
+                listView2.Items.Add(new ListViewItem(new string[] { Path.GetFileName(item.Path) }) { Tag = item });
             }
+
+            toolStripStatusLabel1.Text = "Total items: " + listView2.Items.Count;
         }
+
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             var pos = pictureBox1.PointToClient(Cursor.Position);
@@ -742,6 +780,7 @@ namespace Soba
                     {
                         currentItem.Infos.Add(new RectInfo()
                         {
+                            Parent = currentItem,
                             Rect = new Rectangle(startp.X, startp.Y, w, h),
                             Tag = tags.Count > 0 ? tags[0] : null
                         });
@@ -768,6 +807,16 @@ namespace Soba
     public class Tag
     {
         public string Name;
+    }
+
+    public class ComboBoxItem
+    {
+        public string Name;
+        public object Tag;
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
 
